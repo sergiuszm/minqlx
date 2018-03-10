@@ -18,6 +18,10 @@
 
 import minqlx
 import re
+import minqlx.database
+import time
+
+PLAYER_ACCESS_KEY = "minqlx:players:{}:access"
 
 _DUMMY_USERINFO = ("ui_singlePlayerActive\\0\\cg_autoAction\\1\\cg_autoHop\\0"
     "\\cg_predictItems\\1\\model\\bitterman/sport_blue\\headmodel\\crash/red"
@@ -57,6 +61,7 @@ class Player():
 
         self._userinfo = None
         self._steam_id = self._info.steam_id
+        self._is_vip = self.__is_vip__()
 
         # When a player connects, a the name field in the client struct has yet to be initialized,
         # so we fall back to the userinfo and try parse it ourselves to get the name if needed.
@@ -94,6 +99,19 @@ class Player():
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __is_vip__(self):
+        db = minqlx.database.Redis
+        try:
+            access_to = int(db[PLAYER_ACCESS_KEY.format(self._steam_id)])
+
+        except KeyError as e:
+            access_to = 0
+
+        if access_to == 0 or int(time.time()) >= access_to:
+            return False
+
+        return True
 
     def update(self):
         """Update the player information with the latest data. If the player
@@ -140,6 +158,10 @@ class Player():
     @property
     def steam_id(self):
         return self._steam_id
+
+    @property
+    def vip(self):
+        return self._is_vip
 
     @property
     def id(self):
