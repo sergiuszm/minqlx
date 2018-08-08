@@ -47,6 +47,7 @@ class Player():
     """
     def __init__(self, client_id, info=None):
         self._valid = True
+        self._is_vip = None
 
         # Can pass own info for efficiency when getting all players and to allow dummy players.
         if info:
@@ -101,17 +102,22 @@ class Player():
         return not self.__eq__(other)
 
     def __is_vip__(self):
-        db = minqlx.database.Redis
-        try:
-            access_to = int(db[PLAYER_ACCESS_KEY.format(self._steam_id)])
+        if self._is_vip is None:
+            db = minqlx.database.Redis(None)
+            db = db.connect()
 
-        except KeyError as e:
-            access_to = 0
+            try:
+                access_to = int(db[PLAYER_ACCESS_KEY.format(self._steam_id)])
 
-        if access_to == 0 or int(time.time()) >= access_to:
-            return False
+            except KeyError as e:
+                access_to = 0
 
-        return True
+            if access_to == 0 or int(time.time()) >= access_to:
+                return False
+
+            return True
+
+        return self._is_vip
 
     def update(self):
         """Update the player information with the latest data. If the player
