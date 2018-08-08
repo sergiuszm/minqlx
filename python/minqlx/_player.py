@@ -110,11 +110,14 @@ class Player():
                 access_to = int(db[PLAYER_ACCESS_KEY.format(self._steam_id)])
 
             except KeyError as e:
+                self._is_vip = False
                 access_to = 0
 
             if access_to == 0 or int(time.time()) >= access_to:
+                self._is_vip = False
                 return False
 
+            self._is_vip = True
             return True
 
         return self._is_vip
